@@ -1,0 +1,31 @@
+{
+  "name": "moosebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run init && nodemon --config nodemon.json src/index.ts",
+    "dev:debug": "npm run init && nodemon --config nodemon.json --inspect-brk src/index.ts",
+    "init": "node init.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^1.8.2",
+    "discord.js": "^12.5.3",
+    "number-to-words": "^1.2.4",
+    "spotify-web-api-node": "^5.0.2",
+    "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/cron": "^1.7.2",
+    "@types/node": "^14.14.37",
+    "@types/number-to-words": "^1.2.0",
+    "@types/spotify-web-api-node": "^5.0.2",
+    "@types/sqlite3": "^3.1.7",
+    "nodemon": "^2.0.7",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
+  }
+}

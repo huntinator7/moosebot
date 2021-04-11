@@ -4,9 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
     "dev": "npm run init && nodemon --config nodemon.json src/index.ts",
     "dev:debug": "npm run init && nodemon --config nodemon.json --inspect-brk src/index.ts",
     "init": "node init.js",
+    "start": "npm run init && npm run build && node build/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -16,6 +18,7 @@
     "discord.js": "^12.5.3",
     "number-to-words": "^1.2.4",
     "spotify-web-api-node": "^5.0.2",
+    "sqlite-async": "^1.1.1",
     "sqlite3": "^5.0.2"
   },
   "devDependencies": {

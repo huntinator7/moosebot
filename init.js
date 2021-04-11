@@ -4,7 +4,7 @@ const songDb = new sqlite3.Database("./db/checked_songs.db", (err) => {
   if (err) {
     console.error(err.message);
   }
-  console.log("Connected to the checked_songs database.");
+  console.log("Created checked_songs");
 });
 
 songDb.run(`CREATE TABLE IF NOT EXISTS songs (
@@ -25,3 +25,5 @@ songDb.run(`CREATE TABLE IF NOT EXISTS match (
     FOREIGN KEY (winner) REFERENCES songs (id)
   );
 `);
+
+songDb.close();

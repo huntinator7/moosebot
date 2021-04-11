@@ -3,7 +3,7 @@ import asyncqlite3 from "sqlite-async";
 import SpotifyWebApi from "spotify-web-api-node";
 import Discord from "discord.js";
 import cron from "cron";
-import { MooseConfig } from "../../../config";
+import { MooseConfig } from "../../config";
 import { daily } from "./daily";
 import { reaction } from "./reaction";
 

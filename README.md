@@ -2,7 +2,7 @@
 
 ## Add Module
 
-1. Add a folder in the `src/modules` folder with the name of your module, PascalCase
+1. Add a folder in the `modules` folder with the name of your module, PascalCase
 
 2. Within that folder, create an `index.ts` file
 
@@ -24,7 +24,7 @@ export default ModuleName;
 
 changing ModuleName to whatever your module name is. This function will contain any discord `.on` events, database initialization, cron jobs, etc., and can call any additional functions in the file or other files in the folder.
 
-4. Import your module in `src/modules/index.ts` and export it in the array
+4. Import your module in `modules/index.ts` and export it in the array
 
 5. (Optional) If you have a database you want to use, copy and paste the following code into the end of `init.js`
 

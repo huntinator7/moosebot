@@ -1,7 +1,7 @@
 import Discord from "discord.js";
 import SpotifyWebApi from "spotify-web-api-node";
 
-import configs from "../config";
+import configs from "./config";
 import modules from "./modules";
 
 const config =

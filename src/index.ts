@@ -4,9 +4,8 @@ import SpotifyWebApi from "spotify-web-api-node";
 import configs from "../config";
 import modules from "./modules";
 
-console.log(process.env.NODE_ENV);
-
-const config = configs.dev;
+const config =
+  process.env.NODE_ENV === "development" ? configs.dev : configs.prod;
 
 const dc = new Discord.Client();
 const sp = new SpotifyWebApi(config.setup.spotifyCreds);

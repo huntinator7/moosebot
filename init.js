@@ -1,19 +1,20 @@
 const sqlite3 = require("sqlite3");
 
-const songDb = new sqlite3.Database("./db/checked_songs.db", (err) => {
+const BarchBadnessDB = new sqlite3.Database("./db/barch_badness.db", (err) => {
   if (err) {
     console.error(err.message);
   }
-  console.log("Created checked_songs");
+  console.log("Created barch_badness");
 });
 
-songDb.run(`CREATE TABLE IF NOT EXISTS songs (
+BarchBadnessDB.run(`
+CREATE TABLE IF NOT EXISTS songs (
   id INTEGER PRIMARY KEY,
   song_id TEXT NOT NULL UNIQUE
-  );
-`);
+);`);
 
-songDb.run(`CREATE TABLE IF NOT EXISTS match (
+BarchBadnessDB.run(`
+CREATE TABLE IF NOT EXISTS match (
   id INTEGER PRIMARY KEY,
   day INTEGER NOT NULL,
   song_a INTEGER NOT NULL,
@@ -23,7 +24,6 @@ songDb.run(`CREATE TABLE IF NOT EXISTS match (
     FOREIGN KEY (song_a) REFERENCES songs (id),
     FOREIGN KEY (song_b) REFERENCES songs (id),
     FOREIGN KEY (winner) REFERENCES songs (id)
-  );
-`);
+);`);
 
-songDb.close();
+BarchBadnessDB.close();

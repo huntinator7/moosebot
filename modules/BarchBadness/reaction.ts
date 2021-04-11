@@ -10,7 +10,7 @@ export const reaction = async (
   db: any,
   sp: SpotifyWebApi
 ) => {
-  const VOTES_TO_WIN = 2;
+  const VOTES_TO_WIN = 4;
   // check if user who added reaction was bot
   if (user.bot) return;
   // check if correct channel

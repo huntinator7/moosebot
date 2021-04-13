@@ -1,7 +1,8 @@
-import numberToWords from 'number-to-words';
+import numberToWords from "number-to-words";
 import SpotifyWebApi from "spotify-web-api-node";
 import Discord from "discord.js";
-import queries from './queries';
+import queries from "./queries";
+import { Channels } from ".";
 
 export type Song = SpotifyApi.TrackObjectFull;
 
@@ -84,7 +85,7 @@ const generateMessage = async ({
   console.log("generateMessage");
   return `
   ${buildBigText(`day ${day}`)}\n
-  ${buildBigText(`${roundFromLetter(round, matchNum)}`)}\n
+  ${buildBigText(`${roundFromLetter(round)} ${matchNum}`)}\n
   Vote 🅰️ for ${buildSongMessage(song1)}\n
   Vote 🅱️ for ${buildSongMessage(song2)}
     `;
@@ -104,7 +105,7 @@ const addReactionsToMessage = async (
   message.react("🅱️");
 };
 
-const roundFromLetter = (round: number, matchNum: number) => {
+export const roundFromLetter = (round: number) => {
   const rounds = [
     "final",
     "semifinal",
@@ -116,7 +117,7 @@ const roundFromLetter = (round: number, matchNum: number) => {
     "round of 128",
     "round of 256",
   ];
-  return `${rounds[round]} ${matchNum}`;
+  return rounds[round];
 };
 
 const buildSongMessage = (song: Song) =>

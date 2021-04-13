@@ -1,20 +1,21 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import Discord from "discord.js";
 import queries from "./queries";
-import { round, setSpotifyToken } from "./round";
+import { round, roundFromLetter, setSpotifyToken } from "./round";
+import { Channels } from ".";
 
 export const reaction = async (
   reaction: Discord.MessageReaction,
   user: Discord.User | Discord.PartialUser,
-  channel: Discord.TextChannel,
+  channels: Channels,
   db: any,
   sp: SpotifyWebApi
 ) => {
-  const VOTES_TO_WIN = 4;
+  const VOTES_TO_WIN = 5;
   // check if user who added reaction was bot
   if (user.bot) return;
   // check if correct channel
-  if (reaction.message.channel.id !== channel.id) return;
+  if (reaction.message.channel.id !== channels.vote.id) return;
   // check if correct emoji
   if (!["🅰️", "🅱️"].includes(reaction.emoji.toString())) {
     await reaction.remove();
@@ -46,7 +47,7 @@ export const reaction = async (
       losingId,
       db,
       reactionMessage,
-      channel,
+      channels,
       sp,
       isReactionA
     );
@@ -67,7 +68,7 @@ const declareMatchWinner = async (
   losingId: string,
   db: any,
   reactionMessage: Discord.Message,
-  channel: Discord.TextChannel,
+  channels: Channels,
   sp: SpotifyWebApi,
   isReactionA: boolean
 ) => {
@@ -81,17 +82,20 @@ const declareMatchWinner = async (
   await db.run(queries.SET_MATCH_WINNER, winner.id, match.id);
   // delete message
   await reactionMessage.delete();
+  // send notification message
+  const notificationText =
+    match.round === 0
+      ? "was voted Song of the Day!"
+      : `won in the ${roundFromLetter(match.round)} round`;
+  await setSpotifyToken(sp);
+  const song = await sp.getTrack(winningId);
+  await channels.notify.send(
+    `Congrats! ${song.body.name} by ${song.body.artists
+      .map((a) => a.name)
+      .join(", ")} ${notificationText}`
+  );
   // check if final round of day
-  if (match.round === 0) {
-    await setSpotifyToken(sp);
-    const song = await sp.getTrack(winningId);
-    channel.send(
-      `Congrats! ${song.body.name} by ${song.body.artists
-        .map((a) => a.name)
-        .join(", ")} was voted Song of the Day!`
-    );
-    return;
-  }
+  if (match.round === 0) return;
   // check if next round start ready
   const numCompletedMatches = await db.get(
     queries.NUM_COMPLETED_MATCHES,
@@ -111,6 +115,6 @@ const declareMatchWinner = async (
       body: { tracks: songs },
     } = await sp.getTracks(winners.map((w: any) => w.song_id));
     // start new round
-    round(songs, db, channel, match.day);
+    round(songs, db, channels.vote, match.day);
   }
 };

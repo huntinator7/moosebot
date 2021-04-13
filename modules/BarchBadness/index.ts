@@ -7,6 +7,8 @@ import { MooseConfig } from "../../config";
 import { daily } from "./daily";
 import { reaction } from "./reaction";
 
+export type Channels = { vote: Discord.TextChannel, notify: Discord.TextChannel }
+
 async function BarchBadness(
   dc: Discord.Client,
   sp: SpotifyWebApi,
@@ -15,13 +17,19 @@ async function BarchBadness(
   const db = await asyncqlite3.open("./db/barch_badness.db");
   console.log("Connected to the barch_badness database.");
 
-  const channel = (await dc.channels.fetch(
-    config.BarchBadness.discordChannelId
+  const voteChannel = (await dc.channels.fetch(
+    config.BarchBadness.discordVoteChannelId
   )) as Discord.TextChannel;
+
+  const notifyChannel = (await dc.channels.fetch(
+    config.BarchBadness.discordNotifyChannelId
+  )) as Discord.TextChannel;
+
+  const channels = {vote: voteChannel, notify: notifyChannel}
 
   const job = new cron.CronJob(
     "0 0 9 * * *",
-    () => daily(sp, db, channel, config.BarchBadness.spotifyPlaylistId),
+    () => daily(sp, db, channels, config.BarchBadness.spotifyPlaylistId),
     null,
     true,
     "America/Denver"
@@ -30,9 +38,9 @@ async function BarchBadness(
   job.start();
 
   // add channel messages to cache
-  channel.messages.fetch({ limit: 100 });
+  channels.vote.messages.fetch({ limit: 100 });
 
-  dc.on("messageReactionAdd", (r, u) => reaction(r, u, channel, db, sp));
+  dc.on("messageReactionAdd", (r, u) => reaction(r, u, channels, db, sp));
 }
 
 export default BarchBadness;

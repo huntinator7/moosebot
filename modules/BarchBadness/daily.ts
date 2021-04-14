@@ -3,12 +3,14 @@ import Discord from "discord.js";
 import { round, setSpotifyToken, Song } from "./round";
 import queries from "./queries";
 import { Channels } from ".";
+import numberToWords from "number-to-words";
 
 export const daily = async (
   sp: SpotifyWebApi,
   db: any,
   channels: Channels,
-  playlistId: string
+  playlistId: string,
+  mentionRole: string
 ) => {
   console.log("Running dailySongFunction");
   try {
@@ -18,6 +20,12 @@ export const daily = async (
     console.log("getUnpickedSongs done");
 
     const nextDay = ((await db.get(queries.GET_LATEST_DAY))?.day || 0) + 1;
+    // alert the horde
+    await channels.notify.send(
+      `<@&${mentionRole}> Dawn of the ${numberToWords.toOrdinal(
+        nextDay
+      )} day. Let the voting commence!`
+    );
     // split into groups of 2
     await round(songs, db, channels.vote, nextDay);
   } catch (e) {

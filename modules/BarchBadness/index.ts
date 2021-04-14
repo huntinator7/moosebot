@@ -7,7 +7,10 @@ import { MooseConfig } from "../../config";
 import { daily } from "./daily";
 import { reaction } from "./reaction";
 
-export type Channels = { vote: Discord.TextChannel, notify: Discord.TextChannel }
+export type Channels = {
+  vote: Discord.TextChannel;
+  notify: Discord.TextChannel;
+};
 
 async function BarchBadness(
   dc: Discord.Client,
@@ -25,11 +28,18 @@ async function BarchBadness(
     config.BarchBadness.discordNotifyChannelId
   )) as Discord.TextChannel;
 
-  const channels = {vote: voteChannel, notify: notifyChannel}
+  const channels = { vote: voteChannel, notify: notifyChannel };
 
   const job = new cron.CronJob(
-    "0 0 9 * * *",
-    () => daily(sp, db, channels, config.BarchBadness.spotifyPlaylistId),
+    "40 48 20 * * *",
+    () =>
+      daily(
+        sp,
+        db,
+        channels,
+        config.BarchBadness.spotifyPlaylistId,
+        config.BarchBadness.mentionRole
+      ),
     null,
     true,
     "America/Denver"
@@ -40,7 +50,17 @@ async function BarchBadness(
   // add channel messages to cache
   channels.vote.messages.fetch({ limit: 100 });
 
-  dc.on("messageReactionAdd", (r, u) => reaction(r, u, channels, db, sp));
+  dc.on("messageReactionAdd", (r, u) =>
+    reaction(
+      r,
+      u,
+      channels,
+      db,
+      sp,
+      config.BarchBadness.mentionRole,
+      config.BarchBadness.votesToWin
+    )
+  );
 }
 
 export default BarchBadness;

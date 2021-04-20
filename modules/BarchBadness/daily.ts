@@ -1,25 +1,35 @@
 import SpotifyWebApi from "spotify-web-api-node";
-import Discord from "discord.js";
-import { round, setSpotifyToken, Song } from "./round";
-import queries from "./queries";
-import { Channels } from ".";
 import numberToWords from "number-to-words";
+import { Channels, DB, Playlists, setSpotifyToken, Song } from "./helpers";
+import { round } from "./round";
+import queries from "./queries";
 
 export const daily = async (
   sp: SpotifyWebApi,
-  db: any,
   channels: Channels,
-  playlistId: string,
-  mentionRole: string
+  playlists: Playlists,
+  mentionRole: string,
+  fs: DB
 ) => {
   console.log("Running dailySongFunction");
   try {
     const ROUNDS_TO_HAVE = 3;
     // choose 2^x songs from Moosen Mix that haven't been chosen yet
-    const songs = await getUnpickedSongs(sp, db, playlistId, ROUNDS_TO_HAVE);
+    const songs = await getUnpickedSongs(
+      sp,
+      playlists.main,
+      ROUNDS_TO_HAVE,
+      fs
+    );
     console.log("getUnpickedSongs done");
 
-    const nextDay = ((await db.get(queries.GET_LATEST_DAY))?.day || 0) + 1;
+    // add to voting playlist
+    await sp.addTracksToPlaylist(
+      playlists.voting,
+      songs.map((s) => `spotify:track:${s.id}`)
+    );
+
+    const nextDay = (await queries.GET_LATEST_DAY(fs)) + 1;
     // alert the horde
     await channels.notify.send(
       `<@&${mentionRole}> Dawn of the ${numberToWords.toOrdinal(
@@ -27,7 +37,7 @@ export const daily = async (
       )} day. Let the voting commence!`
     );
     // split into groups of 2
-    await round(songs, db, channels.vote, nextDay);
+    await round(songs, channels.vote, nextDay, fs);
   } catch (e) {
     console.log(e);
     channels.notify.send(e || "An Error Occured");
@@ -36,9 +46,9 @@ export const daily = async (
 
 const getUnpickedSongs = async (
   sp: SpotifyWebApi,
-  db: any,
   playlistId: string,
-  round: number
+  round: number,
+  fs: DB
 ): Promise<Song[]> => {
   await setSpotifyToken(sp);
   const getAndCheckSongs = async (
@@ -56,32 +66,44 @@ const getUnpickedSongs = async (
       fields: "items(track(artists,name,external_urls,id))",
     });
 
-    const spTracksClean = spTracks
-      .map((s) => s.track)
+    const cleanSpTracks = spTracks
+      .map(
+        ({
+          track: {
+            artists,
+            name,
+            external_urls: { spotify: external_url },
+            id,
+          },
+        }) => ({
+          artists: artists.map((a) => a.name).join(", "),
+          name,
+          id,
+          external_url,
+        })
+      )
       .sort((a, b) => (a.id < b.id ? -1 : 1));
 
-    let dbTracks = await db.all(queries.SELECT_ALL_SONGS, []);
-    dbTracks = dbTracks.map((d: any) => d.song_id);
-    console.log(dbTracks);
+    let dbTracks = await queries.GET_ALL_SONGS(fs);
+
+    const cleanDbTracks = dbTracks.map((u) => u.id);
 
     const cleanTracks = [
       ...songs,
-      ...spTracksClean.filter((t) => !dbTracks.includes(t.id)),
+      ...cleanSpTracks.filter((t) => !cleanDbTracks.includes(t.id)),
     ];
-    console.log(cleanTracks);
 
     if (cleanTracks.length >= NUM_SONGS) {
       // good to go, return
       console.log("good to go, return");
       const songsToAdd = cleanTracks.slice(0, NUM_SONGS);
-      const insertSong = await db.prepare(queries.INSERT_SONG);
       await Promise.all(
         songsToAdd.map(async (s) => {
-          await insertSong.run(s.id);
+          await queries.ADD_SONG(s, fs);
         })
       );
       return songsToAdd;
-    } else if (spTracksClean.length === PAGE_SIZE) {
+    } else if (cleanSpTracks.length === PAGE_SIZE) {
       // still more songs to check, call again with page
       console.log(
         "still more songs to check, call again with page " + page + 1

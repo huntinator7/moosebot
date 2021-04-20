@@ -1,18 +1,25 @@
-import numberToWords from "number-to-words";
 import SpotifyWebApi from "spotify-web-api-node";
 import Discord from "discord.js";
 import queries from "./queries";
-import { round, roundFromLetter, setSpotifyToken } from "./round";
-import { Channels } from ".";
+import {
+  Channels,
+  DB,
+  getSongFromMsg,
+  Playlists,
+  roundFromLetter,
+  setSpotifyToken,
+} from "./helpers";
+import { round } from "./round";
 
 export const reaction = async (
   reaction: Discord.MessageReaction,
   user: Discord.User | Discord.PartialUser,
   channels: Channels,
-  db: any,
-  sp: SpotifyWebApi,
+  fs: DB,
   mentionRole: string,
-  votesToWin: number
+  votesToWin: number,
+  playlists: Playlists,
+  sp: SpotifyWebApi
 ) => {
   // check if user who added reaction was bot
   if (user.bot) return;
@@ -47,88 +54,88 @@ export const reaction = async (
     declareMatchWinner(
       winningId,
       losingId,
-      db,
+      fs,
       reactionMessage,
       channels,
-      sp,
       isReactionA,
-      mentionRole
+      mentionRole,
+      playlists,
+      sp
     );
   }
-};
-
-const getSongFromMsg = (msg: Discord.Message, isReactionA: boolean): string => {
-  const match = isReactionA
-    ? /Vote 🅰️(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m
-    : /Vote 🅱️(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m;
-
-  const found = msg.content.match(match);
-  return found?.[2] ?? "";
 };
 
 const declareMatchWinner = async (
   winningId: string,
   losingId: string,
-  db: any,
+  fs: DB,
   reactionMessage: Discord.Message,
   channels: Channels,
-  sp: SpotifyWebApi,
   isReactionA: boolean,
-  mentionRole: string
+  mentionRole: string,
+  playlists: Playlists,
+  sp: SpotifyWebApi
 ) => {
   // update match in db
   const ids = isReactionA ? [winningId, losingId] : [losingId, winningId];
-  const match = await db.get(queries.GET_MATCH_FROM_SONGS, ...ids);
-  console.log(match);
+  const matchId = `${ids[0]}-${ids[1]}`;
+  const winner = await queries.GET_SONG_BY_ID(winningId, fs);
+  const loser = await queries.GET_SONG_BY_ID(losingId, fs);
+  const match = await queries.GET_MATCH_BY_ID(matchId, fs);
 
-  const winner = await db.get(queries.GET_SONG_ID, winningId);
+  await queries.SET_MATCH_WINNER(matchId, winner, fs);
 
-  await db.run(queries.SET_MATCH_WINNER, winner.id, match.id);
   // delete message
   await reactionMessage.delete();
-  // send notification message
-  const notificationText =
-    match.round === 0
-      ? "and was voted Song of the Day!"
-      : `in the ${roundFromLetter(match.round)} round`;
+
+  // remove loser from voting playlist
   await setSpotifyToken(sp);
-  const winningSong = await sp.getTrack(winningId);
-  const losingSong = await sp.getTrack(losingId);
+  await sp.removeTracksFromPlaylist(playlists.voting, [
+    { uri: `spotify:track:${loser.id}` },
+  ]);
+
+  // send notification message
   await channels.notify.send(
-    `Congrats! ${winningSong.body.name} by ${winningSong.body.artists
-      .map((a) => a.name)
-      .join(", ")} beat out ${
-      losingSong.body.name
-    } by ${losingSong.body.artists
-      .map((a) => a.name)
-      .join(", ")} ${notificationText}`
+    `${winner.name} by ${winner.artists} beat out ${loser.name} by ${
+      loser.artists
+    } in the ${roundFromLetter(match.round)} round`
   );
   // check if final round of day
   if (match.round === 0) {
-    await channels.notify.send(`<@&${mentionRole}> A new round is upon us!`);
+    await channels.notify.send(
+      `<@&${mentionRole}> Day ${match.day} is over! ${winner.name} by ${winner.artists} was the Song of the Day!`
+    );
+
+    //remove winner from voting
+    await sp.removeTracksFromPlaylist(playlists.voting, [
+      { uri: `spotify:track:${winner.id}` },
+    ]);
+
+    // add winner to playlist
+    await sp.addTracksToPlaylist(playlists.winners, [
+      `spotify:track:${winner.id}`,
+    ]);
+
     return;
   }
   // check if next round start ready
-  const numCompletedMatches = await db.get(
-    queries.NUM_COMPLETED_MATCHES,
+  const numCompletedMatches = await queries.GET_NUM_COMPLETED_MATCHES(
     match.day,
-    match.round
+    match.round,
+    fs
   );
-  if (Math.pow(2, match.round) === numCompletedMatches.count) {
+
+  if (Math.pow(2, match.round) === numCompletedMatches) {
     // ready to start next round
     // notify next round has begun
     await channels.notify.send(`<@&${mentionRole}> A new round is upon us!`);
     // grab songs
-    const winners = await db.all(
-      queries.GET_WINNERS_OF_ROUND,
+    const previousRoundWinners = await queries.GET_PREVIOUS_ROUND_WINNERS(
       match.day,
-      match.round
+      match.round,
+      fs
     );
-    await setSpotifyToken(sp);
-    const {
-      body: { tracks: songs },
-    } = await sp.getTracks(winners.map((w: any) => w.song_id));
     // start new round
-    round(songs, db, channels.vote, match.day);
+    round(previousRoundWinners, channels.vote, match.day, fs);
   }
 };

@@ -1,101 +1,99 @@
-import numberToWords from "number-to-words";
-import SpotifyWebApi from "spotify-web-api-node";
 import Discord from "discord.js";
+import {
+  DB,
+  Song,
+  roundFromLetter,
+  SongPair,
+  buildSongMessage,
+  buildBigText,
+} from "./helpers";
 import queries from "./queries";
-import { Channels } from ".";
-
-export type Song = SpotifyApi.TrackObjectFull;
-
-type SongPair = {
-  song1: Song;
-  song2: Song;
-  day: number;
-  round: number;
-  matchNum: number;
-};
 
 export const round = async (
   songs: Song[],
-  db: any,
   channel: Discord.TextChannel,
-  day: number
+  day: number,
+  fs: DB
 ) => {
   const songPairs = await buildSongPairs(
     songs,
-    db,
     Math.log2(songs.length) - 1,
-    day
+    day,
+    fs
   );
   console.log("buildSongPairs done");
+  console.log(songPairs);
   // generate message to send for each pair
   const messages = await Promise.all(
-    songPairs.map((pair) => generateMessage(pair))
+    songPairs.map((pair) => generateMessage(pair, fs))
   );
   console.log("generatedMessages done");
+  // console.log(messages);
   // send messages
   const sentMessages = await Promise.all(
-    messages.map((m) => sendMessage(m, channel))
+    messages.map((m) => sendMessage(m, channel, fs))
   );
   console.log("sentMessages done");
+  // console.log(sentMessages);
   // add reactions to each message
   await Promise.all(sentMessages.map((s) => addReactionsToMessage(s)));
   console.log("addReactionsToMessage done");
 };
 
-export const setSpotifyToken = async (sp: SpotifyWebApi) => {
-  const creds = await sp.clientCredentialsGrant();
-  sp.setAccessToken(creds.body["access_token"]);
-};
-
 const buildSongPairs = async (
   songs: Song[],
-  db: any,
   round: number,
-  day: number
+  day: number,
+  fs: DB
 ): Promise<SongPair[]> => {
   console.log("buildSongPairs");
+  console.log(songs);
   const pairs: SongPair[] = Array.from(
     { length: Math.ceil(songs.length / 2) },
     (_v, i) => {
       return {
-        song1: songs[i * 2],
-        song2: songs[i * 2 + 1],
+        song_a: songs[2 * i].id,
+        song_b: songs[2 * i + 1].id,
         day,
         round,
         matchNum: i + 1,
       };
     }
   );
-  await pairs.forEach(async (p) => {
-    const { id: song_a } = await db.get(queries.GET_SONG_ID, p.song1.id);
-    const { id: song_b } = await db.get(queries.GET_SONG_ID, p.song2.id);
-    console.log(song_a, song_b);
-    await db.run(queries.INSERT_MATCH, p.day, song_a, song_b, round);
-  });
+
+  // insert matches into DB
+  await Promise.all(
+    pairs.map(async (p) => {
+      await queries.ADD_MATCH(p, fs);
+    })
+  );
   return pairs;
 };
 
-const generateMessage = async ({
-  song1,
-  song2,
-  day,
-  round,
-  matchNum,
-}: SongPair): Promise<string> => {
+const generateMessage = async (
+  { song_a, song_b, day, round, matchNum }: SongPair,
+  fs: DB
+): Promise<{ message: string; id: string }> => {
   console.log("generateMessage");
-  return `
-  ${buildBigText(`day ${day}`)}\n
-  ${buildBigText(`${roundFromLetter(round)} ${matchNum}`)}\n
-  Vote 🅰️ for ${buildSongMessage(song1)}\n
-  Vote 🅱️ for ${buildSongMessage(song2)}
-    `;
+  return {
+    message: `
+${buildBigText(`day ${day}`)}\n
+${buildBigText(`${roundFromLetter(round)} ${matchNum}`)}\n
+Vote 🅰️ for ${await buildSongMessage(song_a, fs)}\n
+Vote 🅱️ for ${await buildSongMessage(song_b, fs)}
+`,
+    id: `${song_a}-${song_b}`,
+  };
 };
 
 const sendMessage = async (
-  message: string,
-  channel: Discord.TextChannel
+  { message, id }: { message: string; id: string },
+  channel: Discord.TextChannel,
+  fs: DB
 ): Promise<Discord.Message> => {
-  return channel.send(message);
+  const sentMessage = await channel.send(message);
+  await queries.SET_MATCH_MESSAGE_ID(id, sentMessage.id, fs);
+  return sentMessage;
 };
 
 const addReactionsToMessage = async (
@@ -103,35 +101,4 @@ const addReactionsToMessage = async (
 ): Promise<void> => {
   message.react("🅰️");
   message.react("🅱️");
-};
-
-export const roundFromLetter = (round: number) => {
-  const rounds = [
-    "final",
-    "semifinal",
-    "quarterfinal",
-    "elite eight",
-    "sweet sixteen",
-    "round of 32",
-    "round of 64",
-    "round of 128",
-    "round of 256",
-  ];
-  return rounds[round];
-};
-
-const buildSongMessage = (song: Song) =>
-  `${song.name} by ${song.artists.map((a) => a.name).join(", ")}\n${
-    song.external_urls.spotify
-  }`;
-
-const buildBigText = (str: string): string => {
-  return [...str]
-    .map((char) => {
-      if (char === " ") return " ";
-      else if (Number.isNaN(parseInt(char)))
-        return `:regional_indicator_${char}:`;
-      else return `:${numberToWords.toWords(parseInt(char))}:`;
-    })
-    .join(" ");
 };

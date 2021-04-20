@@ -3,3 +3,4 @@ config.[tj]s
 db/*.db
 db/*.sql
 build/
+sync.ts

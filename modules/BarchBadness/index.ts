@@ -30,7 +30,7 @@ async function BarchBadness(
   const fs = admin.firestore().doc(config.BarchBadness.firebaseDocument);
 
   const job = new cron.CronJob(
-    "10 54 0 * * *",
+    config.BarchBadness.startTime,
     () => daily(sp, channels, playlists, config.BarchBadness.mentionRole, fs),
     null,
     true,

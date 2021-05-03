@@ -24,13 +24,18 @@ const GET_LATEST_DAY = async (fs: DB): Promise<number> => {
   );
 };
 
-const ADD_MATCH = async (p: SongPair, fs: DB): Promise<void> => {
+const ADD_MATCH = async (
+  p: SongPair,
+  matchIndex: number,
+  fs: DB
+): Promise<void> => {
   const matchId = `${p.song_a}-${p.song_b}`;
   const song_a = await GET_SONG_BY_ID(p.song_a, fs);
   const song_b = await GET_SONG_BY_ID(p.song_b, fs);
   await fs.collection("Matches").doc(matchId).set({
     day: p.day,
     round: p.round,
+    matchIndex,
     song_a,
     song_b,
   });

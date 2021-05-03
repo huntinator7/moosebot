@@ -63,8 +63,8 @@ const buildSongPairs = async (
 
   // insert matches into DB
   await Promise.all(
-    pairs.map(async (p) => {
-      await queries.ADD_MATCH(p, fs);
+    pairs.map(async (p, i) => {
+      await queries.ADD_MATCH(p, i, fs);
     })
   );
   return pairs;

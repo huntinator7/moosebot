@@ -61,6 +61,7 @@ export type Match = {
   day: number;
   messageId?: string;
   round: number;
+  matchIndex?: number;
   song_a: Song;
   song_b: Song;
   winner?: Song;

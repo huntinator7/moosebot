@@ -71,6 +71,14 @@ const SET_MATCH_WINNER = async (
   await fs.collection("Matches").doc(id).update({ winner });
 };
 
+const SET_MATCH_VOTERS = async (
+  id: string,
+  matchVotes: any,
+  fs: DB
+): Promise<void> => {
+  await fs.collection("Matches").doc(id).update(matchVotes);
+};
+
 const GET_COMPLETED_MATCHES_BY_DAY_AND_ROUND = async (
   day: number,
   round: number,
@@ -101,7 +109,10 @@ const GET_PREVIOUS_ROUND_WINNERS = async (
   fs: DB
 ): Promise<Song[]> => {
   const matches = await GET_COMPLETED_MATCHES_BY_DAY_AND_ROUND(day, round, fs);
-  return matches.map((m) => m.winner as Song);
+
+  return matches
+    .sort((a, b) => (a?.matchIndex ?? 0) - (b?.matchIndex ?? 0))
+    .map((m) => m.winner as Song);
 };
 
 export default {
@@ -119,4 +130,5 @@ export default {
   GET_NUM_COMPLETED_MATCHES,
   GET_PREVIOUS_ROUND_WINNERS,
   GET_COMPLETED_MATCHES_BY_DAY_AND_ROUND,
+  SET_MATCH_VOTERS,
 };

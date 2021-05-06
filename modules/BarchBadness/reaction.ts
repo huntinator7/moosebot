@@ -45,40 +45,81 @@ export const reaction = async (
   otherReaction = reactionMessage.reactions.cache.get(isReactionA ? "🅱️" : "🅰️")
     ?.users;
 
+  const users = await Promise.all(
+    reactionMessage.reactions.cache.map(async (r) => {
+      const users = await r.users.fetch();
+      const vote =
+        r.emoji.toString() === "🅰️" ? "song_a_votes" : "song_b_votes";
+      return {
+        vote,
+        users: users
+          .filter((u) => !u.bot)
+          .map((u) => ({
+            avatar: u.displayAvatarURL(),
+            name: u.username,
+          })),
+      };
+    })
+  );
+
+  const songUsers = users.reduce(
+    (a, c) => ({
+      ...a,
+      [c.vote]: c.users,
+    }),
+    {}
+  );
+
+  const winningId = getSongFromMsg(reactionMessage, isReactionA);
+  const losingId = getSongFromMsg(reactionMessage, !isReactionA);
+
+  const ids = isReactionA ? [winningId, losingId] : [losingId, winningId];
+  const matchId = `${ids[0]}-${ids[1]}`;
+
+  await queries.SET_MATCH_VOTERS(matchId, songUsers, fs);
+
   console.log("Ready to process reaction");
 
   if ((reaction.count ?? 0) >= votesToWin) {
     console.log("winner declared");
-    const winningId = getSongFromMsg(reactionMessage, isReactionA);
-    const losingId = getSongFromMsg(reactionMessage, !isReactionA);
-    declareMatchWinner(
+    declareMatchWinner({
       winningId,
       losingId,
       fs,
       reactionMessage,
       channels,
-      isReactionA,
       mentionRole,
       playlists,
-      sp
-    );
+      sp,
+      matchId,
+    });
   }
 };
 
-const declareMatchWinner = async (
-  winningId: string,
-  losingId: string,
-  fs: DB,
-  reactionMessage: Discord.Message,
-  channels: Channels,
-  isReactionA: boolean,
-  mentionRole: string,
-  playlists: Playlists,
-  sp: SpotifyWebApi
-) => {
+interface declareMatchWinnerProps {
+  winningId: string;
+  losingId: string;
+  fs: DB;
+  reactionMessage: Discord.Message;
+  channels: Channels;
+  mentionRole: string;
+  playlists: Playlists;
+  sp: SpotifyWebApi;
+  matchId: string;
+}
+
+const declareMatchWinner = async ({
+  winningId,
+  losingId,
+  fs,
+  reactionMessage,
+  channels,
+  mentionRole,
+  playlists,
+  sp,
+  matchId,
+}: declareMatchWinnerProps) => {
   // update match in db
-  const ids = isReactionA ? [winningId, losingId] : [losingId, winningId];
-  const matchId = `${ids[0]}-${ids[1]}`;
   const winner = await queries.GET_SONG_BY_ID(winningId, fs);
   const loser = await queries.GET_SONG_BY_ID(losingId, fs);
   const match = await queries.GET_MATCH_BY_ID(matchId, fs);

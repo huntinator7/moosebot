@@ -24,11 +24,16 @@ export const roundFromLetter = (round: number) => {
 
 export const getSongFromMsg = (
   msg: Discord.Message,
-  isReactionA: boolean
+  isReactionA: boolean,
+  isReactionOld: boolean
 ): string => {
-  const match = isReactionA
-    ? /Vote 🅰️(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m
-    : /Vote 🅱️(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m;
+  const match = isReactionOld
+    ? isReactionA
+      ? /Vote 🅰️(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m
+      : /Vote 🅱️(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m
+    : isReactionA
+    ? /Vote 🟥(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m
+    : /Vote 🟩(.|)*\nhttps:\/\/open\.spotify\.com\/track\/(.*)/m;
 
   const found = msg.content.match(match);
   return found?.[2] ?? "";
@@ -48,6 +53,38 @@ export const buildBigText = (str: string): string => {
       else return `:${numberToWords.toWords(parseInt(char))}:`;
     })
     .join(" ");
+};
+
+export const reactionIsA = (reaction: Discord.MessageReaction): boolean => {
+  return (
+    reaction.emoji.toString() === "🅰️" || reaction.emoji.toString() === "🟥"
+  );
+};
+
+export const reactionIsOld = (reaction: Discord.MessageReaction): boolean => {
+  return (
+    reaction.emoji.toString() === "🅰️" || reaction.emoji.toString() === "🅱️"
+  );
+};
+
+export const getOppositeReaction = (
+  reaction: Discord.MessageReaction
+): string => {
+  function test() {
+    switch (reaction.emoji.toString()) {
+      case "🅰️":
+        return "🅱️";
+      case "🅱️":
+        return "🅰️";
+      case "🟥":
+        return "🟩";
+      case "🟩":
+        return "🟥";
+      default:
+        return "";
+    }
+  }
+  return test();
 };
 
 export type Song = {

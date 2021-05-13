@@ -4,10 +4,13 @@ import queries from "./queries";
 import {
   Channels,
   DB,
+  getOppositeReaction,
   getSongFromMsg,
   Playlists,
   roundFromLetter,
   setSpotifyToken,
+  reactionIsA,
+  reactionIsOld,
 } from "./helpers";
 import { round } from "./round";
 
@@ -26,30 +29,33 @@ export const reaction = async (
   // check if correct channel
   if (reaction.message.channel.id !== channels.vote.id) return;
   // check if correct emoji
-  if (!["🅰️", "🅱️"].includes(reaction.emoji.toString())) {
+  if (!["🅰️", "🅱️", "🟩", "🟥"].includes(reaction.emoji.toString())) {
     await reaction.remove();
     return;
   }
   // check if user reacted other emoji, remove that one
-  const isReactionA = reaction.emoji.toString() === "🅰️";
+  const isReactionA = reactionIsA(reaction);
+  const isReactionOld = reactionIsOld(reaction);
+  console.log(isReactionA, isReactionOld, getOppositeReaction(reaction));
 
   let reactionMessage = await reaction.message.fetch();
   let otherReaction = reactionMessage.reactions.cache.get(
-    isReactionA ? "🅱️" : "🅰️"
+    getOppositeReaction(reaction)
   )?.users;
 
   await otherReaction?.remove(user as Discord.User);
 
   // update reactionMessage and otherReaction
   reactionMessage = await reaction.message.fetch(true);
-  otherReaction = reactionMessage.reactions.cache.get(isReactionA ? "🅱️" : "🅰️")
-    ?.users;
+  otherReaction = reactionMessage.reactions.cache.get(
+    getOppositeReaction(reaction)
+  )?.users;
 
   const users = await Promise.all(
     reactionMessage.reactions.cache.map(async (r) => {
       const users = await r.users.fetch();
-      const vote =
-        r.emoji.toString() === "🅰️" ? "song_a_votes" : "song_b_votes";
+      console.log(reactionIsA(r));
+      const vote = reactionIsA(r) ? "song_a_votes" : "song_b_votes";
       return {
         vote,
         users: users
@@ -62,6 +68,8 @@ export const reaction = async (
     })
   );
 
+  console.log(reactionMessage.reactions);
+
   const songUsers = users.reduce(
     (a, c) => ({
       ...a,
@@ -70,8 +78,10 @@ export const reaction = async (
     {}
   );
 
-  const winningId = getSongFromMsg(reactionMessage, isReactionA);
-  const losingId = getSongFromMsg(reactionMessage, !isReactionA);
+  console.log(songUsers);
+
+  const winningId = getSongFromMsg(reactionMessage, isReactionA, isReactionOld);
+  const losingId = getSongFromMsg(reactionMessage, !isReactionA, isReactionOld);
 
   const ids = isReactionA ? [winningId, losingId] : [losingId, winningId];
   const matchId = `${ids[0]}-${ids[1]}`;

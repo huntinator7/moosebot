@@ -79,8 +79,8 @@ const generateMessage = async (
     message: `
 ${buildBigText(`day ${day}`)}\n
 ${buildBigText(`${roundFromLetter(round)} ${matchNum}`)}\n
-Vote 🅰️ for ${await buildSongMessage(song_a, fs)}\n
-Vote 🅱️ for ${await buildSongMessage(song_b, fs)}
+Vote 🟥 for ${await buildSongMessage(song_a, fs)}\n
+Vote 🟩 for ${await buildSongMessage(song_b, fs)}
 `,
     id: `${song_a}-${song_b}`,
   };
@@ -99,6 +99,6 @@ const sendMessage = async (
 const addReactionsToMessage = async (
   message: Discord.Message
 ): Promise<void> => {
-  message.react("🅰️");
-  message.react("🅱️");
+  message.react("🟥");
+  message.react("🟩");
 };

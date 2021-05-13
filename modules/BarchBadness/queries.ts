@@ -76,6 +76,7 @@ const SET_MATCH_VOTERS = async (
   matchVotes: any,
   fs: DB
 ): Promise<void> => {
+  console.log(id, matchVotes);
   await fs.collection("Matches").doc(id).update(matchVotes);
 };
 

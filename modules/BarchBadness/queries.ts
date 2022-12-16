@@ -46,8 +46,8 @@ const GET_ALL_SONGS = async (fs: DB): Promise<Song[]> => {
 };
 
 const GET_ALL_MATCHES = async (fs: DB): Promise<Match[]> => {
-  return (await fs.collection("Songs").get()).docs.map(
-    (d) => d.data() as Match
+  return (await fs.collection("Matches").get()).docs.map(
+    (d) => ({ ...d.data(), id: d.id } as Match)
   );
 };
 
@@ -116,6 +116,28 @@ const GET_PREVIOUS_ROUND_WINNERS = async (
     .map((m) => m.winner as Song);
 };
 
+const imageUrls: Record<string, string> = {
+  "ZTagger1911": "https://cdn.discordapp.com/avatars/147143598301773824/304fd2bfcede09858e8169cf36242410.webp?size=128",
+  "huntinator7": "https://cdn.discordapp.com/avatars/89758327621296128/fd1f5e51ccd7c84a5270a6f0537efc14.webp?size=128",
+  "skwid23": "https://cdn.discordapp.com/avatars/262122518993829891/bf2d852225a11319110a7276c1c225c1.webp?size=128",
+  "Tater_Hater": "https://cdn.discordapp.com/avatars/185934787679092736/bd2808789fb6c798de35efc431f283ae.webp?size=128",
+  "potatobattery": "https://cdn.discordapp.com/avatars/262161423415640064/e4ef6129fe01322391b99cddb14b5790.webp?size=128",
+  "Samlen1020": "https://cdn.discordapp.com/avatars/693312649559146546/426c468f705c334c2542eec428d5ec33.webp?size=128",
+  "Derko": "https://cdn.discordapp.com/avatars/81913971979849728/1d634249f882edfb2640ea77f55d4a8b.webp?size=128",
+  "cenakr": "https://cdn.discordapp.com/embed/avatars/1.png",
+  "splatterdodge": "https://cdn.discordapp.com/avatars/207214113191886849/947f0a7ebd0bf1342938b7e19f333cec.webp?size=128"
+}
+
+const UPDATE_ALL_MATCH_IMAGES = async (fs: DB): Promise<void> => {
+  console.log("UPDATE_ALL_MATCH_IMAGES");
+  const allMatches = await GET_ALL_MATCHES(fs);
+  allMatches.forEach(async (match) => {
+    const song_a_votes = match.song_a_votes?.map(({ name, avatar }) => ({ name, avatar: imageUrls[name] || avatar })) ?? [];
+    const song_b_votes = match.song_b_votes?.map(({ name, avatar }) => ({ name, avatar: imageUrls[name] || avatar })) ?? [];
+    await fs.collection("Matches").doc(match.id).update({ song_a_votes, song_b_votes });
+  });
+}
+
 export default {
   SELECT_ALL_SONGS,
   SELECT_ALL_MATCHES,
@@ -132,4 +154,5 @@ export default {
   GET_PREVIOUS_ROUND_WINNERS,
   GET_COMPLETED_MATCHES_BY_DAY_AND_ROUND,
   SET_MATCH_VOTERS,
+  UPDATE_ALL_MATCH_IMAGES,
 };

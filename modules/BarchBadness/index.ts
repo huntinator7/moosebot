@@ -5,6 +5,7 @@ import cron from "cron";
 import { MooseConfig } from "../../config";
 import { daily } from "./daily";
 import { reaction } from "./reaction";
+import queries from "./queries";
 
 async function BarchBadness(
   dc: Discord.Client,
@@ -38,6 +39,8 @@ async function BarchBadness(
   );
 
   job.start();
+
+  // queries.UPDATE_ALL_MATCH_IMAGES(fs);
 
   // add channel messages to cache
   channels.vote.messages.fetch({ limit: 100 });

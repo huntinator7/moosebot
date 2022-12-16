@@ -102,6 +102,9 @@ export type Match = {
   song_a: Song;
   song_b: Song;
   winner?: Song;
+  song_a_votes: Vote[];
+  song_b_votes: Vote[];
+  id: string;
 };
 
 export type Channels = {
@@ -124,3 +127,8 @@ export type SongPair = {
   round: number;
   matchNum: number;
 };
+
+export type Vote = {
+  avatar: string;
+  name: string;
+}

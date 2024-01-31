@@ -1,3 +1,4 @@
-import BarchBadness from "./BarchBadness";
+import BarchBadness from './BarchBadness';
+import BinaryBot from './BinaryBot'
 
-export default [BarchBadness];
+export default [BarchBadness, BinaryBot];

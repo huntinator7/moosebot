@@ -11,7 +11,7 @@
 ```ts
 import SpotifyWebApi from "spotify-web-api-node";
 import Discord from "discord.js";
-import { MooseConfig } from "../../../config";
+import { MooseConfig } from "../../config";
 
 async function ModuleName(
   dc: Discord.Client,

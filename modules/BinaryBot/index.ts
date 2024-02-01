@@ -9,8 +9,11 @@ async function BinaryBot(
     config: MooseConfig
 ) {
     dc.on('message', (msg) => {
+        console.log('onMsg', msg.content)
         if (isAscii(msg.content)) {
+            console.log('IS ASCII', msg.content)
             const parsedString = readAsciiString(msg.content)
+            console.log('ASCII is ', parsedString)
             msg.channel.send(`Ascii translator says: ${parsedString}`)
         }
     })
@@ -21,6 +24,7 @@ export default BinaryBot;
 function isAscii(msg: string) {
     const charsInMessage = getCharsInMessage(msg)
     const isAsciiFormat = msg.search(/^(\S{8} ?)+$/u) === 0
+    console.log(charsInMessage, isAsciiFormat)
     if (charsInMessage.length <= 3 && isAsciiFormat) return true
     return false
 }

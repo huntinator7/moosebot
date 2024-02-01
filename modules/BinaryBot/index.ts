@@ -40,5 +40,5 @@ function readAsciiString(msg: string) {
 }
 
 function getCharsInMessage(msg: string) {
-    return Object.keys(msg.split('').reduce((a, c) => ({ ...a, [c]: true }), {} as Record<string, boolean>))
+    return Object.keys([...msg].reduce((a, c) => ({ ...a, [c]: true }), {} as Record<string, boolean>))
 }

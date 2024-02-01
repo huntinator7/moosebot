@@ -33,8 +33,14 @@ function readAsciiString(msg: string) {
     const charsInMessage = getCharsInMessage(msg)
     const [charA, charB] = charsInMessage
     const rep01 = msg.replaceAll(charA, '0').replaceAll(charB, '1')
+    console.log(rep01);
 
-    const parsed01 = rep01.split(' ').map(c => parseInt(c, 2)).map(c => String.fromCharCode(c)).join('')
+    const parsed01_a = rep01.split(' ')
+    const parsed01_b = parsed01_a.map(c => parseInt(c, 2))
+    const parsed01_c = parsed01_b.map(c => String.fromCharCode(c))
+    const parsed01 = parsed01_c.join('')
+
+    console.log(parsed01_a, parsed01_b, parsed01_c)
 
     return parsed01
 }

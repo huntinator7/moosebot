@@ -9,7 +9,7 @@ async function BinaryBot(
     config: MooseConfig
 ) {
     dc.on('message', (msg) => {
-        console.log('onMsg', msg.content)
+        console.log('onMsg', msg)
         if (isAscii(msg.content)) {
             console.log('IS ASCII', msg.content)
             const parsedString = readAsciiString(msg.content)

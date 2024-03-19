@@ -24,7 +24,7 @@ export default BinaryBot;
 function isAscii(msg: string) {
     const charsInMessage = getCharsInMessage(msg)
     const isAsciiFormat = msg.search(/^(\S{8} ?)+$/u) === 0
-    console.log(charsInMessage, isAsciiFormat)
+    // console.log(charsInMessage, isAsciiFormat)
     if (charsInMessage.length <= 3 && isAsciiFormat) return true
     return false
 }
@@ -33,7 +33,7 @@ function readAsciiString(msg: string) {
     const charsInMessage = getCharsInMessage(msg)
     const [charA, charB] = charsInMessage
     const rep01 = msg.replaceAll(charA, '0').replaceAll(charB, '1').replaceAll(' ', '')
-    console.log(rep01);
+    // console.log(rep01);
 
     const parsed01_a = rep01.match(/.{8}/g)
     if (!parsed01_a) return
@@ -41,7 +41,7 @@ function readAsciiString(msg: string) {
     const parsed01_c = parsed01_b.map(c => String.fromCharCode(c))
     const parsed01 = parsed01_c.join('')
 
-    console.log(parsed01_a, parsed01_b, parsed01_c)
+    // console.log(parsed01_a, parsed01_b, parsed01_c)
 
     return parsed01
 }
